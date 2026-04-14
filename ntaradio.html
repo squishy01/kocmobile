@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modern Ogg Player with Playlist</title>
+    <link href="./css/radio.css" rel="stylesheet" />
+    <style>
+        :root {
+            --bg-color: #121212;
+            --card-color: #1a1a1a;
+            --accent-color: #1db954; 
+            --text-color: #ffffff;
+            --subtext-color: #b3b3b3;
+        }
+
+        body {
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            background: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+        }
+
+        /* Playlist Dropdown Styling */
+        .playlist-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            font-size: 0.75rem;
+            color: var(--subtext-color);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        select#playlist {
+            width: 100%;
+            background: #282828;
+            border: 1px solid #333;
+            padding: 12px;
+            border-radius: 8px;
+            color: var(--text-color);
+            font-size: 0.9rem;
+            cursor: pointer;
+            outline: none;
+        }
+
+        select#playlist:focus { border-color: var(--accent-color); }
+
+        /* Other UI Elements */
+        .input-group { display: flex; margin-bottom: 20px; gap: 10px; }
+        input#urlInput { flex-grow: 1; background: #282828; border: 1px solid transparent; padding: 12px; border-radius: 8px; color: var(--text-color); }
+        button#loadBtn { background: #333; border: none; color: white; padding: 12px; border-radius: 8px; cursor: pointer; }
+
+        .art-area {
+            width: 120px; height: 120px; background: #222; border-radius: 50%;
+            margin: 0 auto 20px auto; display: flex; justify-content: center;
+            align-items: center; font-size: 2.5rem; position: relative;
+        }
+
+        .art-area.playing { border: 3px solid var(--accent-color); animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(29, 185, 84, 0.4); } 70% { box-shadow: 0 0 0 15px rgba(29, 185, 84, 0); } 100% { box-shadow: 0 0 0 0 rgba(29, 185, 84, 0); } }
+
+        #now-playing { font-size: 1.2rem; font-weight: 700; color: var(--accent-color); text-align: center; margin-bottom: 5px; }
+        #status { font-size: 0.8rem; color: var(--subtext-color); text-align: center; margin-bottom: 20px; }
+
+        .controls { display: flex; flex-direction: column; gap: 15px; align-items: center;}
+        .timeline-container { display: flex; width: 100%; align-items: center; gap: 10px;}
+        .time { font-size: 0.75rem; color: var(--subtext-color); width: 35px;}
+        input[type="range"] { flex-grow: 1; accent-color: var(--accent-color); cursor: pointer; }
+
+        button#playPauseBtn {
+            background: var(--accent-color); border: none; width: 55px; height: 55px;
+            border-radius: 50%; cursor: pointer; font-size: 1.2rem;
+        }
+    </style>
+</head>
+<body>
+
+<div class="player-card">
+    <div class="playlist-group">
+        <label>Select from Playlist</label>
+        <select id="playlist" onchange="selectFromDropdown()">
+    <option value="" disabled selected>Choose a track...</option>
+    <option value="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3">Placeholder Track 1</option>
+    <option value="https://prod-3-84-157-159.amperwave.net/saga-wmgxfmmp3-ibc1?session-id=92e80ebd256e870f06e02bc5a8068111&source=tunein&source=tunein&source=TuneIn&gdpr=0&us_privacy=1YNY">93.1 FM Maines Coast</option>
+    
+    <optgroup label="Classics">
+        <option value="https://prod-3-89-205-60.amperwave.net/binnie-wfnkfmaac-hlsc.m3u8/?apv=a2&dist=Audacy&source=webA2&gpp=DBABrGA%7EBVQqAAAACWA.QA%7EBUoAAAJY.QA%7EBVoAABY%7EBVoAAFg.QA%7EBVKAAAWA%7EBVoAAAFg.QA&a2_app_version=2026.04.01&a2_session_id=89e0881b-fa57-9f2d-b335-30e977208cc4&deviceid=app%3Af8k%3A23fd8e675e85800fe943b77a6bd44bdd&c_user_id=f8k%3A23fd8e675e85800fe943b77a6bd44bdd&sc=0&z=f163ba29e9954b3d9bf3edb7a8ae41af&p=1">107.5 FM Frank FM</option>
+        <option value="https://prod-3-89-205-60.amperwave.net/binnie-wfnkfmaac-hlsc.m3u8/?apv=a2&dist=Audacy&source=webA2&gpp=DBABrGA%7EBVQqAAAACWA.QA%7EBUoAAAJY.QA%7EBVoAABY%7EBVoAAFg.QA%7EBVKAAAWA%7EBVoAAAFg.QA&a2_app_version=2026.04.01&a2_session_id=89e0881b-fa57-9f2d-b335-30e977208cc4&deviceid=app%3Af8k%3A23fd8e675e85800fe943b77a6bd44bdd&c_user_id=f8k%3A23fd8e675e85800fe943b77a6bd44bdd&sc=0&z=f163ba29e9954b3d9bf3edb7a8ae41af&p=1">99.3 FM The Wave</option>
+    </optgroup>
+
+    <optgroup label="Alternative">
+        <option value="https://ice7.securenetsystems.net/WHSN">WHSN - Bangor</option>
+    </optgroup>
+
+    <optgroup label="Hardrock/Heavy Metal">
+        <option value="https://cast4.asurahosting.com/proxy/zrock/stream">99.9 Z-Rock</option>
+        <option value="https://prod-54-174-185-17.amperwave.net/audacy-kqrcfmaac-hlsc.m3u8/?apv=a2&dist=Audacy&source=webA2&gpp=DBABrGA%7EBVQqAAAACWA.QA%7EBUoAAAJY.QA%7EBVoAABY%7EBVoAAFg.QA%7EBVKAAAWA%7EBVoAAAFg.QA&a2_app_version=2026.04.01&a2_session_id=89e0881b-fa57-9f2d-b335-1de24ef2a896&deviceid=app%3Af8k%3A23fd8e675e85800fe943b77a6bd44bdd&c_user_id=f8k%3A23fd8e675e85800fe943b77a6bd44bdd&sc=0&z=77f92a7b49ac492baea2d7d1ee61a040&p=1">98.9 FM The Rock</option>
+        <option value="https://prod-32-195-42-22.amperwave.net/binnie-whxrfmaac-hlsc.m3u8?apv=a2&dist=Audacy&source=webA2&gpp=DBABrGA%7EBVQqAAAACWA.QA%7EBUoAAAJY.QA%7EBVoAABY%7EBVoAAFg.QA%7EBVKAAAWA%7EBVoAAAFg.QA&a2_app_version=2026.04.01&a2_session_id=89e0881b-fa57-9f2d-b335-30e977208cc4&deviceid=app%3Af8k%3A23fd8e675e85800fe943b77a6bd44bdd&c_user_id=f8k%3A23fd8e675e85800fe943b77a6bd44bdd&sc=0">106.3 FM The Bone</option>
+    </optgroup>
+
+    <optgroup label="Soundtrack">
+        <option value="https://kathy.torontocast.com:1825/stream">cinemix</option>
+    </optgroup>
+
+    <optgroup label="The Wasteland">
+        <option title="fallout 3" value="https://fallout.fm:8444/falloutfm2.ogg">Galaxy News Radio</option>
+        <option title="fallout 4" value="https://fallout.fm:8444/falloutfm6.ogg">Dimond City Radio</option>
+        <option title="fallout 4" value="https://fallout.fm:8444/falloutfm8.ogg">MWTCF</option>
+        <option title="fallout new vegas" value="https://fallout.fm:8444/falloutfm3.ogg">New Vegas Radio</option>
+        <option value="https://fallout.fm:8444/falloutfm10.ogg">Fallout 76 general</option>
+        <option value="https://fallout.fm:8444/falloutfm9.ogg">Fallout 76 Classical</option>
+        <option value="https://fallout.fm:8444/falloutfm7.ogg">Fallout 4 Classical</option>
+        <option value="https://fallout.fm:8444/falloutfm4.ogg">Fallout 2 OST</option>
+        <option value="https://fallout.fm:8444/falloutfm4.ogg">Fallout 1 OST</option>
+    </optgroup>
+</select>
+    </div>
+
+    <div class="input-group">
+        <input type="text" id="urlInput" placeholder="Or paste any .ogg URL...">
+        <button id="loadBtn" onclick="loadFromURL()">Load</button>
+    </div>
+
+    <div class="art-area" id="artArea">♪</div>
+    
+    <div id="now-playing">Waiting...</div>
+    <div id="status">Ready</div>
+
+    <div class="controls">
+        <div class="timeline-container">
+            <span class="time" id="currentTime">0:00</span>
+            <input type="range" id="timeline" min="0" value="0" step="1">
+            <span class="time" id="totalTime">0:00</span>
+        </div>
+        <button id="playPauseBtn" onclick="togglePlay()">
+            <span id="playPauseIcon">▶</span>
+        </button>
+    </div>
+
+    <audio id="audioEngine"></audio>
+</div>
+
+<br>
+<div class="music-footer-links">
+    <a href="https://tunein.com/">Tune in radio service</a>
+</div>
+
+<script>
+    const audioEngine = document.getElementById('audioEngine');
+    const timeline = document.getElementById('timeline');
+    const playPauseIcon = document.getElementById('playPauseIcon');
+    const artArea = document.getElementById('artArea');
+    const nowPlayingText = document.getElementById('now-playing');
+    const statusText = document.getElementById('status');
+
+    function selectFromDropdown() {
+        const dropdown = document.getElementById('playlist');
+        const selectedUrl = dropdown.value;
+        const songTitle = dropdown.options[dropdown.selectedIndex].text;
+        if (selectedUrl) startPlayback(selectedUrl, songTitle);
+    }
+
+    function loadFromURL() {
+        const url = document.getElementById('urlInput').value;
+        if (!url) return alert("Paste a URL!");
+        const fileName = url.split('/').pop().replace('.ogg', '').replace(/[-_]/g, ' ');
+        startPlayback(url, decodeURIComponent(fileName));
+    }
+
+    function startPlayback(url, title) {
+    audioEngine.src = url;
+    nowPlayingText.innerText = title;
+    statusText.innerText = "Loading...";
+    
+    // Update Media Session (Lock screen controls)
+    if ('mediaSession' in navigator) {
+        navigator.mediaSession.metadata = new MediaMetadata({
+            title: title,
+            artist: "Radio Stream",
+            album: "Ogg Player"
+        });
+    }
+
+    audioEngine.play()
+        .then(() => {
+            statusText.innerText = "Playing";
+            updateUI(true);
+            // If you added the visualizer, initialize it here
+            if (typeof initVisualizer === "function") initVisualizer();
+        })
+        .catch(e => {
+            statusText.innerText = "Error loading file";
+            updateUI(false);
+            console.error("Playback error:", e);
+        });
+}
+
+    function togglePlay() {
+        if (!audioEngine.src) return;
+        if (audioEngine.paused) {
+            audioEngine.play();
+            updateUI(true);
+        } else {
+            audioEngine.pause();
+            updateUI(false);
+        }
+    }
+
+    function updateUI(isPlaying) {
+    // We use "||" or similar standard characters to avoid the blue emoji bug
+    playPauseIcon.innerText = isPlaying ? "❙ ❙" : "▶"; 
+    isPlaying ? artArea.classList.add('playing') : artArea.classList.remove('playing');
+}
+
+    audioEngine.ontimeupdate = () => {
+        if (isNaN(audioEngine.duration) || !isFinite(audioEngine.duration)) {
+            document.getElementById('totalTime').innerText = "Live";
+            return;
+        }
+        timeline.value = audioEngine.currentTime;
+        timeline.max = audioEngine.duration;
+        document.getElementById('currentTime').innerText = formatTime(audioEngine.currentTime);
+        document.getElementById('totalTime').innerText = formatTime(audioEngine.duration);
+    };
+
+    timeline.oninput = () => { audioEngine.currentTime = timeline.value; };
+
+    function formatTime(s) {
+        let m = Math.floor(s / 60);
+        let sec = Math.floor(s % 60);
+        return `${m}:${sec < 10 ? '0' + sec : sec}`;
+    }
+</script>
+
+</body>
+</html>
